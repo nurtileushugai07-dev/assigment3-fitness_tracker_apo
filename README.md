@@ -1,284 +1,309 @@
-# Fitness Tracker API
+# Fitness Tracker API — SOLID Architecture & Advanced OOP
 
-## A. Project Overview
+## A. SOLID Documentation
 
-### Purpose
-This Fitness Tracker API is a Java-based application that manages workout data using PostgreSQL database. It demonstrates advanced OOP principles, JDBC operations, and multi-layer architecture.
+### Single Responsibility Principle (SRP)
+Each class has exactly one reason to change:
+- **Workout** — only defines base workout structure
+- **CardioWorkout / StrengthWorkout** — only handle their specific workout type
+- **WorkoutServiceImpl** — only handles workout business logic and validation
+- **ExerciseServiceImpl** — only handles exercise business logic
+- **CardioWorkoutRepository** — only handles cardio DB operations
+- **SortingUtils** — only handles sorting
+- **ReflectionUtils** — only handles reflection
 
-### Entities and Relationships
-- **Workout** (Abstract Base Class) - Base entity for all workout types
-- **CardioWorkout** - Extends Workout for cardio activities (running, cycling, swimming)
-- **StrengthWorkout** - Extends Workout for strength training (weightlifting, bodyweight exercises)
-- **Exercise** - Represents individual exercises with composition relationship
+### Open-Closed Principle (OCP)
+The system is open for extension but closed for modification:
+- To add a new workout type (e.g., `FlexibilityWorkout`), create a new subclass of `Workout` and implement `CrudRepository<FlexibilityWorkout>` — no existing code needs to change
+- `CrudRepository<T>` is a generic interface — new repositories can be added without modifying existing ones
 
-### OOP Design Overview
-The project implements:
-- **Inheritance**: CardioWorkout and StrengthWorkout extend abstract Workout class
-- **Polymorphism**: Workouts can be handled through base class reference
-- **Encapsulation**: Private fields with getters/setters
-- **Abstraction**: Abstract methods for workout type and intensity calculation
-- **Composition**: Exercise entities can be part of workouts
-- **Interfaces**: Validatable and Trackable for common behaviors
+### Liskov Substitution Principle (LSP)
+Subclasses can replace their parent class without breaking behavior:
+- `CardioWorkout` and `StrengthWorkout` can be used anywhere a `Workout` reference is expected
+- In `Main.java`: `Workout[] workouts = {cardio, strength}` — both behave correctly through the base type
+- Both subclasses correctly override `displayInfo()`, `getWorkoutType()`, and `calculateIntensity()`
+
+### Interface Segregation Principle (ISP)
+Interfaces are small and focused:
+- `Validatable` — only defines validation (`validate()`)
+- `Trackable` — only defines tracking (`getTrackingInfo()`)
+- `CrudRepository<T>` — only defines CRUD operations
+- `WorkoutService` — only defines workout service operations
+- `ExerciseService` — only defines exercise service operations
+
+### Dependency Inversion Principle (DIP)
+High-level modules depend on abstractions, not concrete classes:
+- `WorkoutServiceImpl` depends on `CrudRepository<T>` interface, not concrete repositories
+- `Main` depends on `WorkoutService` and `ExerciseService` interfaces
+- Constructor injection is used to pass dependencies:
+```java
+WorkoutService service = new WorkoutServiceImpl(
+    new CardioWorkoutRepository(),
+    new StrengthWorkoutRepository()
+);
+```
 
 ---
 
-## B. OOP Design Documentation
+## B. Advanced OOP Features
+
+### Generics
+Used in `CrudRepository<T>` interface:
+```java
+public interface CrudRepository<T> {
+    void create(T entity);
+    List<T> getAll();
+    T getById(int id);
+    void update(int id, T entity);
+    void delete(int id);
+}
+```
+Each repository implements this with a specific type: `CrudRepository<CardioWorkout>`, `CrudRepository<StrengthWorkout>`, `CrudRepository<Exercise>`.
+
+### Lambdas
+Used in `SortingUtils.java` for sorting lists:
+```java
+// Sort by calories descending
+Collections.sort(list, (a, b) -> Integer.compare(b.getCaloriesBurned(), a.getCaloriesBurned()));
+
+// Sort by name ascending
+Collections.sort(list, (a, b) -> a.getName().compareTo(b.getName()));
+```
+Lambdas replace the need to create anonymous Comparator classes, making the code shorter and more readable.
+
+### Reflection (RTTI)
+Used in `ReflectionUtils.java`:
+- `getClass().getName()` — gets class name at runtime
+- `getClass().getSuperclass()` — gets parent class
+- `getClass().getInterfaces()` — lists implemented interfaces
+- `getDeclaredFields()` — lists all fields
+- `getDeclaredMethods()` — lists all methods
+
+### Interface Default and Static Methods
+**Validatable interface:**
+```java
+// Default method — has implementation
+default String getValidationMessage() {
+    return validate() ? "Data is valid" : "Data is invalid";
+}
+
+// Static method — called via interface name
+static void printValidationResult(Validatable item) { ... }
+```
+
+**Trackable interface:**
+```java
+// Default method
+default void printTrackingInfo() { ... }
+
+// Static method — called via interface name
+static void printAllTracking(List<? extends Trackable> items) { ... }
+```
+
+---
+
+## C. OOP Documentation
 
 ### Abstract Class: Workout
-**Fields:**
-- `id` (int) - Unique identifier
-- `name` (String) - Workout name
-- `durationMinutes` (int) - Duration in minutes
-- `caloriesBurned` (int) - Calories burned
-
-**Abstract Methods:**
-- `String getWorkoutType()` - Returns type of workout
-- `double calculateIntensity()` - Calculates workout intensity
-
-**Concrete Methods:**
-- `boolean isValid()` - Validates workout data
-- `void displayInfo()` - Displays workout information
+- **Fields:** id, name, durationMinutes, caloriesBurned
+- **Abstract methods:** `getWorkoutType()`, `calculateIntensity()`
+- **Concrete methods:** `isValid()`, `displayInfo()`
 
 ### Subclasses
+| Class | Extra Fields | Intensity Formula |
+|---|---|---|
+| CardioWorkout | distanceKm, averageHeartRate | (HR / duration) × distance |
+| StrengthWorkout | sets, reps, weightKg | (sets × reps × weight) / duration |
 
-#### 1. CardioWorkout
-**Additional Fields:**
-- `distanceKm` (double) - Distance covered
-- `averageHeartRate` (int) - Average heart rate
+### Composition
+`Exercise` is a standalone entity representing individual exercises (muscle group, equipment). It can be associated with strength workouts, demonstrating composition.
 
-**Implemented Methods:**
-- `getWorkoutType()` - Returns "Cardio"
-- `calculateIntensity()` - (HR / duration) * distance
-
-#### 2. StrengthWorkout
-**Additional Fields:**
-- `sets` (int) - Number of sets
-- `reps` (int) - Repetitions per set
-- `weightKg` (double) - Weight used
-
-**Implemented Methods:**
-- `getWorkoutType()` - Returns "Strength"
-- `calculateIntensity()` - (sets * reps * weight) / duration
-
-### Interfaces
-
-#### Validatable
-```java
-boolean validate();
-```
-Ensures data integrity before database operations.
-
-#### Trackable
-```java
-String getTrackingInfo();
-```
-Provides formatted tracking information for display.
-
-### Composition/Aggregation
-**Exercise** class is used as a standalone entity that can be associated with workouts, demonstrating composition pattern.
-
-### Polymorphism Example
+### Polymorphism
 ```java
 Workout[] workouts = {cardioWorkout, strengthWorkout};
 for (Workout w : workouts) {
-    w.displayInfo();  // Polymorphic call
-    w.calculateIntensity();  // Different implementation for each type
+    w.displayInfo();           // Different output per type
+    w.calculateIntensity();    // Different formula per type
 }
 ```
 
+### UML Diagram
+See `docs/uml.png`
+
 ---
 
-## C. Database Description
+## D. Database
 
 ### Schema
-```sql
--- Cardio Workouts Table
-CREATE TABLE cardio_workouts (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
-    calories_burned INT NOT NULL CHECK (calories_burned > 0),
-    distance_km DECIMAL(10, 2) NOT NULL CHECK (distance_km > 0),
-    average_heart_rate INT NOT NULL CHECK (average_heart_rate > 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Strength Workouts Table
-CREATE TABLE strength_workouts (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
-    calories_burned INT NOT NULL CHECK (calories_burned > 0),
-    sets INT NOT NULL CHECK (sets > 0),
-    reps INT NOT NULL CHECK (reps > 0),
-    weight_kg DECIMAL(10, 2) NOT NULL CHECK (weight_kg > 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Exercises Table
-CREATE TABLE exercises (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    muscle_group VARCHAR(50) NOT NULL,
-    equipment_needed VARCHAR(100)
-);
-```
+- **exercises** — id, name (UNIQUE), muscle_group, equipment_needed
+- **cardio_workouts** — id, name (UNIQUE), duration_minutes, calories_burned, distance_km, average_heart_rate
+- **strength_workouts** — id, name (UNIQUE), duration_minutes, calories_burned, sets, reps, weight_kg
 
 ### Constraints
-- **Primary Keys**: All tables have auto-incrementing SERIAL primary keys
-- **Check Constraints**: Numeric fields must be greater than 0
-- **NOT NULL**: Required fields cannot be null
+- All tables have `SERIAL PRIMARY KEY`
+- `UNIQUE` on name fields to prevent duplicates
+- `CHECK` constraints: all numeric fields must be > 0
+- `NOT NULL` on all required fields
+- `DEFAULT CURRENT_TIMESTAMP` on created_at
 
 ### Sample Inserts
-See `schema.sql` for complete insert statements.
+See `resources/schema.sql`
 
 ---
 
-## D. Controller Layer
+## E. Architecture
 
-### CRUD Operations
+### Layer Roles
+```
+Main (Controller)
+  → No business logic
+  → Creates services via DIP (constructor injection)
+  → Delegates all operations to service layer
 
-#### Create Workout
-```java
-CardioWorkout running = new CardioWorkout("Morning Run", 30, 300, 5.0, 145);
-service.createCardioWorkout(running);
-// Response: Workout created with generated ID
+WorkoutServiceImpl / ExerciseServiceImpl (Service)
+  → Applies validation (validate())
+  → Checks for duplicates
+  → Checks resource existence before update/delete
+  → Uses repository interfaces (DIP)
+
+CardioWorkoutRepository / StrengthWorkoutRepository / ExerciseRepository (Repository)
+  → Implements CrudRepository<T> generic interface
+  → Only JDBC operations
+  → No business logic
+
+PostgreSQL (Database)
+  → Stores data with constraints
 ```
 
-#### Read All Workouts
-```java
-List<CardioWorkout> workouts = service.getAllCardioWorkouts();
-// Response: List of all cardio workouts
+### Request/Response Example
 ```
-
-#### Read Workout by ID
-```java
-CardioWorkout workout = service.getCardioWorkoutById(1);
-// Response: Workout object or ResourceNotFoundException
-```
-
-#### Update Workout
-```java
-workout.setDurationMinutes(35);
-service.updateCardioWorkout(1, workout);
-// Response: Workout updated successfully
-```
-
-#### Delete Workout
-```java
-service.deleteCardioWorkout(1);
-// Response: Workout deleted or ResourceNotFoundException
+Main calls: workoutService.createCardioWorkout(workout)
+  → Service validates: workout.validate() → true
+  → Service checks duplicates: getAll() → no match
+  → Service calls: cardioRepo.create(workout)
+    → Repository executes: INSERT INTO cardio_workouts ...
+    → Sets generated ID on workout object
+  → Returns to Main
+Main prints: "Created: Morning Running (ID: 1)"
 ```
 
 ---
 
-## E. Instructions to Compile and Run
+## F. Execution Instructions
 
 ### Prerequisites
-- Java JDK 8 or higher
-- PostgreSQL 12 or higher
-- PostgreSQL JDBC Driver
+- Java JDK 8+
+- PostgreSQL 12+
+- PostgreSQL JDBC Driver (`postgresql-42.7.0.jar`)
 
 ### Database Setup
 ```bash
-# Create database
-psql -U postgres
+# In pgAdmin or psql:
 CREATE DATABASE fitness_tracker;
-
-# Run schema
-psql -U postgres -d fitness_tracker -f resources/schema.sql
+# Then run schema.sql in Query Tool
 ```
 
-### Update Database Credentials
+### Update Password
 Edit `utils/DatabaseConnection.java`:
 ```java
-private static final String URL = "jdbc:postgresql://localhost:5432/fitness_tracker";
-private static final String USER = "your_username";
 private static final String PASSWORD = "your_password";
 ```
 
 ### Compile
 ```bash
-javac -cp ".:postgresql-42.7.0.jar" -d bin src/**/*.java
+# Windows:
+javac -cp ".;postgresql-42.7.0.jar" -d bin src/model/*.java src/exception/*.java src/utils/*.java src/repository/interfaces/*.java src/repository/*.java src/service/interfaces/*.java src/service/*.java src/Main.java
+
+# Linux/Mac:
+javac -cp ".:postgresql-42.7.0.jar" -d bin src/model/*.java src/exception/*.java src/utils/*.java src/repository/interfaces/*.java src/repository/*.java src/service/interfaces/*.java src/service/*.java src/Main.java
 ```
 
 ### Run
 ```bash
+# Windows:
+java -cp "bin;postgresql-42.7.0.jar" Main
+
+# Linux/Mac:
 java -cp "bin:postgresql-42.7.0.jar" Main
 ```
 
 ---
 
-## F. Screenshots
-
-### Successful CRUD Operations
-![screen1.png](docs/screen1.png)
-![screen2.png](docs/screen2.png)
-![screen3.png](docs/screen3.png)
-1. Creating workouts
-2. Reading all workouts
-3. Updating workout
-4. Deleting workout
-5. Polymorphism demonstration
-6. Interface usage
+## G. Screenshots
+See `docs/screenshots/`for:
+1. Successful CRUD operations
+2. Validation failure (InvalidInputException)
+3. Duplicate resource error (DuplicateResourceException)
+4. Resource not found error (ResourceNotFoundException)
+5. Reflection utility output
+6. Sorted lists using lambdas
+7. Minimum value found using getAll()
 
 ---
 
-## G. Reflection
+## H. Reflection
 
 ### What I Learned
-- Implementing abstract classes and interfaces in real applications
-- Using JDBC with PreparedStatements for secure database operations
-- Designing multi-layer architecture (Controller → Service → Repository)
-- Creating custom exception hierarchies for better error handling
-- Applying OOP principles (inheritance, polymorphism, encapsulation)
+- How to apply SOLID principles in a real Java project
+- How generics make repository code reusable across entity types
+- How lambdas simplify sorting logic compared to anonymous classes
+- How reflection allows runtime inspection of class structure
+- How interface default/static methods add functionality without breaking existing code
+- How constructor injection (DIP) makes code more flexible and testable
 
 ### Challenges Faced
-- Properly handling SQLException and creating meaningful custom exceptions
-- Ensuring proper resource management with try-with-resources
-- Designing a clean separation between service and repository layers
-- Implementing validation at both setter and service levels
+- Understanding DIP and how to inject dependencies via constructor
+- Balancing SRP — deciding what logic belongs in Service vs Repository
+- Making generic CrudRepository work with different entity types
+- Writing correct lambda expressions for different Comparator scenarios
 
-### Benefits of JDBC and Multi-Layer Design
-- **JDBC**: Direct database control, better performance, portable across databases
-- **Multi-Layer**: Clear separation of concerns, easier testing, maintainable code
-- **PreparedStatements**: Protection against SQL injection, better performance with reuse
-- **Service Layer**: Centralized business logic and validation
-- **Repository Pattern**: Abstraction of data access, easier to swap implementations
+### Value of SOLID Architecture
+- **SRP** makes each class easy to understand and modify
+- **OCP** allows adding new workout types without changing existing code
+- **LSP** ensures subclasses work correctly through base class references
+- **ISP** keeps interfaces small and focused — classes only implement what they need
+- **DIP** decouples layers — services don't know which specific repository is used
 
 ---
 
 ## Project Structure
 ```
-fitness-tracker-api/
+assignment4-fitness-tracker/
 ├── src/
 │   ├── model/
 │   │   ├── Workout.java (Abstract)
 │   │   ├── CardioWorkout.java
 │   │   ├── StrengthWorkout.java
 │   │   ├── Exercise.java
-│   │   ├── Validatable.java (Interface)
-│   │   └── Trackable.java (Interface)
+│   │   ├── Validatable.java (Interface with default + static)
+│   │   └── Trackable.java (Interface with default + static)
 │   ├── repository/
+│   │   ├── interfaces/
+│   │   │   └── CrudRepository.java (Generic interface)
 │   │   ├── CardioWorkoutRepository.java
 │   │   ├── StrengthWorkoutRepository.java
 │   │   └── ExerciseRepository.java
 │   ├── service/
-│   │   └── WorkoutService.java
+│   │   ├── interfaces/
+│   │   │   ├── WorkoutService.java
+│   │   │   └── ExerciseService.java
+│   │   ├── WorkoutServiceImpl.java
+│   │   └── ExerciseServiceImpl.java
 │   ├── exception/
 │   │   ├── InvalidInputException.java
 │   │   ├── DuplicateResourceException.java
 │   │   ├── ResourceNotFoundException.java
 │   │   └── DatabaseOperationException.java
 │   ├── utils/
-│   │   └── DatabaseConnection.java
+│   │   ├── DatabaseConnection.java
+│   │   ├── SortingUtils.java (Lambdas)
+│   │   └── ReflectionUtils.java (RTTI)
 │   └── Main.java
 ├── resources/
 │   └── schema.sql
-└── README.md
+├── docs/
+│   ├── screenshots/
+│   └── uml.png
+├── README.md
+└── .gitignore
 ```
-
----
-
-## License
-This project is for educational purposes.

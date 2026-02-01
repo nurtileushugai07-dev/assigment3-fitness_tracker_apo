@@ -1,14 +1,20 @@
+-- Drop tables if they exist
+DROP TABLE IF EXISTS strength_workouts CASCADE;
+DROP TABLE IF EXISTS cardio_workouts CASCADE;
+DROP TABLE IF EXISTS exercises CASCADE;
 
+-- Exercises table
 CREATE TABLE exercises (
                            id SERIAL PRIMARY KEY,
-                           name VARCHAR(100) NOT NULL,
+                           name VARCHAR(100) NOT NULL UNIQUE,
                            muscle_group VARCHAR(50) NOT NULL,
                            equipment_needed VARCHAR(100)
 );
 
+-- Cardio Workouts table
 CREATE TABLE cardio_workouts (
                                  id SERIAL PRIMARY KEY,
-                                 name VARCHAR(100) NOT NULL,
+                                 name VARCHAR(100) NOT NULL UNIQUE,
                                  duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
                                  calories_burned INT NOT NULL CHECK (calories_burned > 0),
                                  distance_km DECIMAL(10, 2) NOT NULL CHECK (distance_km > 0),
@@ -16,9 +22,10 @@ CREATE TABLE cardio_workouts (
                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Strength Workouts table (has FK to exercises)
 CREATE TABLE strength_workouts (
                                    id SERIAL PRIMARY KEY,
-                                   name VARCHAR(100) NOT NULL,
+                                   name VARCHAR(100) NOT NULL UNIQUE,
                                    duration_minutes INT NOT NULL CHECK (duration_minutes > 0),
                                    calories_burned INT NOT NULL CHECK (calories_burned > 0),
                                    sets INT NOT NULL CHECK (sets > 0),
@@ -27,6 +34,7 @@ CREATE TABLE strength_workouts (
                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sample inserts: Exercises
 INSERT INTO exercises (name, muscle_group, equipment_needed) VALUES
                                                                  ('Push-ups', 'Chest', 'None'),
                                                                  ('Pull-ups', 'Back', 'Pull-up bar'),
@@ -34,11 +42,13 @@ INSERT INTO exercises (name, muscle_group, equipment_needed) VALUES
                                                                  ('Bench Press', 'Chest', 'Barbell'),
                                                                  ('Deadlift', 'Back', 'Barbell');
 
+-- Sample inserts: Cardio Workouts
 INSERT INTO cardio_workouts (name, duration_minutes, calories_burned, distance_km, average_heart_rate) VALUES
                                                                                                            ('Morning Run', 30, 300, 5.0, 145),
                                                                                                            ('Evening Cycling', 45, 400, 15.0, 130),
                                                                                                            ('Swimming', 40, 350, 2.0, 120);
 
+-- Sample inserts: Strength Workouts
 INSERT INTO strength_workouts (name, duration_minutes, calories_burned, sets, reps, weight_kg) VALUES
                                                                                                    ('Bench Press Session', 20, 150, 4, 10, 60.0),
                                                                                                    ('Squat Session', 25, 200, 5, 12, 80.0),

@@ -1,10 +1,10 @@
 package model;
 
 public abstract class Workout {
-    protected int id;
-    protected String name;
-    protected int durationMinutes;
-    protected int caloriesBurned;
+    private int id;
+    private String name;
+    private int durationMinutes;
+    private int caloriesBurned;
 
     public Workout(int id, String name, int durationMinutes, int caloriesBurned) {
         this.id = id;
@@ -19,61 +19,35 @@ public abstract class Workout {
         this.caloriesBurned = caloriesBurned;
     }
 
-    // Абстрактные методы
+    // Abstract methods
     public abstract String getWorkoutType();
     public abstract double calculateIntensity();
 
-    // Конкретный метод
+    // Concrete method
     public boolean isValid() {
         return name != null && !name.trim().isEmpty()
                 && durationMinutes > 0
                 && caloriesBurned > 0;
     }
 
+    // Polymorphic method - can be overridden in subclasses
     public void displayInfo() {
-        System.out.println("Workout: " + name + " | Duration: " + durationMinutes +
-                " min | Calories: " + caloriesBurned);
+        System.out.println("[" + getWorkoutType() + "] " + name
+                + " | Duration: " + durationMinutes + " min"
+                + " | Calories: " + caloriesBurned
+                + " | Intensity: " + String.format("%.2f", calculateIntensity()));
     }
 
-    // Getters and Setters
-    public int getId() {
-        return id;
-    }
+    // Getters and Setters (encapsulation)
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public int getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
 
-    public void setName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name cannot be empty");
-        }
-        this.name = name;
-    }
-
-    public int getDurationMinutes() {
-        return durationMinutes;
-    }
-
-    public void setDurationMinutes(int durationMinutes) {
-        if (durationMinutes <= 0) {
-            throw new IllegalArgumentException("Duration must be greater than 0");
-        }
-        this.durationMinutes = durationMinutes;
-    }
-
-    public int getCaloriesBurned() {
-        return caloriesBurned;
-    }
-
-    public void setCaloriesBurned(int caloriesBurned) {
-        if (caloriesBurned <= 0) {
-            throw new IllegalArgumentException("Calories must be greater than 0");
-        }
-        this.caloriesBurned = caloriesBurned;
-    }
+    public int getCaloriesBurned() { return caloriesBurned; }
+    public void setCaloriesBurned(int caloriesBurned) { this.caloriesBurned = caloriesBurned; }
 }

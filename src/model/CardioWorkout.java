@@ -19,52 +19,40 @@ public class CardioWorkout extends Workout implements Validatable, Trackable {
     }
 
     @Override
-    public String getWorkoutType() {
-        return "Cardio";
-    }
+    public String getWorkoutType() { return "Cardio"; }
 
     @Override
     public double calculateIntensity() {
-        // Интенсивность = (ЧСС / продолжительность) * расстояние
-        return (averageHeartRate / (double) durationMinutes) * distanceKm;
+        return (averageHeartRate / (double) getDurationMinutes()) * distanceKm;
     }
 
+    // LSP: behaves correctly when used via Workout reference
+    @Override
+    public void displayInfo() {
+        System.out.println("[Cardio] " + getName()
+                + " | Duration: " + getDurationMinutes() + " min"
+                + " | Calories: " + getCaloriesBurned()
+                + " | Distance: " + String.format("%.2f", distanceKm) + " km"
+                + " | HR: " + averageHeartRate + " bpm"
+                + " | Intensity: " + String.format("%.2f", calculateIntensity()));
+    }
+
+    // Validatable interface
     @Override
     public boolean validate() {
         return isValid() && distanceKm > 0 && averageHeartRate > 0;
     }
 
+    // Trackable interface
     @Override
     public String getTrackingInfo() {
-        return String.format("Cardio: %s | Distance: %.2f km | HR: %d bpm | Intensity: %.2f",
-                name, distanceKm, averageHeartRate, calculateIntensity());
+        return String.format("Cardio: %s | Distance: %.2f km | HR: %d bpm",
+                getName(), distanceKm, averageHeartRate);
     }
 
-    @Override
-    public void displayInfo() {
-        System.out.println(getTrackingInfo());
-    }
+    public double getDistanceKm() { return distanceKm; }
+    public void setDistanceKm(double distanceKm) { this.distanceKm = distanceKm; }
 
-    // Getters and Setters
-    public double getDistanceKm() {
-        return distanceKm;
-    }
-
-    public void setDistanceKm(double distanceKm) {
-        if (distanceKm <= 0) {
-            throw new IllegalArgumentException("Distance must be greater than 0");
-        }
-        this.distanceKm = distanceKm;
-    }
-
-    public int getAverageHeartRate() {
-        return averageHeartRate;
-    }
-
-    public void setAverageHeartRate(int averageHeartRate) {
-        if (averageHeartRate <= 0) {
-            throw new IllegalArgumentException("Heart rate must be greater than 0");
-        }
-        this.averageHeartRate = averageHeartRate;
-    }
+    public int getAverageHeartRate() { return averageHeartRate; }
+    public void setAverageHeartRate(int averageHeartRate) { this.averageHeartRate = averageHeartRate; }
 }
